@@ -460,7 +460,7 @@
     .catch(() => showError('batas_pelalawan.geojson was not found in this folder — upload it alongside this page to display sub-district boundaries.'));
 
   // Carbon classification raster (Cloud-Optimized GeoTIFF)
-  const url_to_cog = "https://github.com/dumanian/webgis-karbon/releases/download/v1.0/carbon_class_3warna_COG.tif";
+  var url_to_cog = "https://github.com/dumanian/webgis-karbon/releases/download/v1.0/carbon_class_3warna_COG.tif";
 
   parseGeoraster(url_to_cog).then(georaster => {
     const carbonLayer = new GeoRasterLayer({
