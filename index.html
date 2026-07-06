@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smallholder Oil Palm Carbon Map — Pelalawan Regency</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,900&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --ink: #0F1C16;
+    --panel: #152A20;
+    --panel-2: #1B3327;
+    --line: rgba(239, 231, 214, 0.12);
+    --canopy: #3E7C59;
+    --canopy-light: #7FB596;
+    --gold: #C9A24B;
+    --gold-light: #E4C778;
+    --soil: #9C7A54;
+    --paper: #EFE7D6;
+    --muted: #8FA095;
+    --danger: #C97A5B;
+    --radius: 10px;
+  }
+
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; height:100%; }
+  body{
+    font-family: 'Inter', sans-serif;
+    background: var(--ink);
+    color: var(--paper);
+    overflow: hidden;
+  }
+
+  /* ---------- Masthead ---------- */
+  #header{
+    background: linear-gradient(180deg, var(--panel-2) 0%, var(--panel) 100%);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 26px;
+    display:flex; justify-content:space-between; align-items:center; gap: 20px;
+    position: relative; z-index: 1001;
+  }
+  #header::after{
+    content:""; position:absolute; left:0; right:0; bottom:-1px; height:3px;
+    background: repeating-linear-gradient(90deg, var(--gold) 0px, var(--gold) 14px, transparent 14px, transparent 28px);
+    opacity:.55;
+  }
+  .brand{ display:flex; align-items:center; gap:14px; min-width:0; }
+  .brand svg{ flex-shrink:0; }
+  .brand-text .eyebrow{
+    font-family:'IBM Plex Mono', monospace; font-size:.68rem; letter-spacing:2px;
+    text-transform:uppercase; color: var(--gold-light); margin:0 0 3px 0;
+  }
+  .brand-text h1{
+    margin:0; font-family:'Fraunces', serif; font-weight:600; font-size:1.5rem;
+    color: var(--paper); letter-spacing:.2px; line-height:1.1;
+  }
+  .header-meta{ text-align:right; font-family:'IBM Plex Mono', monospace; font-size:.72rem; color: var(--muted); line-height:1.6; white-space:nowrap; }
+  .header-meta strong{ color: var(--gold-light); font-weight:500; }
+  #sidebarToggle{
+    display:none; background: var(--panel-2); border:1px solid var(--line); color:var(--paper);
+    border-radius:8px; padding:8px 12px; font-size:.9rem; cursor:pointer; font-family:'Inter';
+  }
+
+  /* ---------- Layout ---------- */
+  #content-wrapper{ display:flex; height: calc(100vh - 63px); width:100%; position:relative; }
+
+  #sidebar{
+    width: 380px; min-width: 380px; background: var(--ink);
+    border-right: 1px solid var(--line);
+    overflow-y: auto; padding: 22px 24px 30px 24px;
+  }
+  #sidebar::-webkit-scrollbar{ width:6px; }
+  #sidebar::-webkit-scrollbar-thumb{ background: var(--panel-2); border-radius:4px; }
+
+  #map{ flex-grow:1; height:100%; background:#050a07; }
+
+  .section{ margin-bottom: 28px; }
+  .section-label{
+    font-family:'IBM Plex Mono', monospace; font-size:.7rem; letter-spacing:1.5px;
+    text-transform: uppercase; color: var(--gold-light); margin:0 0 12px 0;
+    display:flex; align-items:center; gap:8px;
+  }
+  .section-label::before{ content:""; width:14px; height:2px; background: var(--gold); display:inline-block; flex-shrink:0; }
+
+  /* Executive summary */
+  .stat-hero{
+    background: linear-gradient(160deg, var(--panel-2), var(--panel));
+    border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 20px 22px; margin-bottom:14px;
+  }
+  .stat-hero .value{
+    font-family:'Fraunces', serif; font-weight:900; font-size: 2.6rem; color: var(--paper);
+    line-height:1; display:flex; align-items:baseline; gap:8px;
+  }
+  .stat-hero .value span{ font-family:'IBM Plex Mono', monospace; font-size:1rem; font-weight:400; color: var(--gold-light); }
+  .stat-hero .label{ margin-top:6px; font-size:.78rem; color: var(--muted); text-transform:uppercase; letter-spacing:1px; }
+
+  .stat-chips{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+  .chip{
+    background: rgba(239,231,214,0.04); border:1px solid var(--line); border-radius:8px;
+    padding: 10px 12px;
+  }
+  .chip .n{ font-family:'IBM Plex Mono', monospace; font-size:1.05rem; color: var(--canopy-light); font-weight:500; }
+  .chip .t{ font-size:.68rem; color: var(--muted); margin-top:2px; text-transform:uppercase; letter-spacing:.5px; }
+
+  /* Chart + table */
+  .chart-wrap{ background: rgba(239,231,214,0.03); border:1px solid var(--line); border-radius: var(--radius); padding: 14px 14px 6px 14px; }
+  .chart-canvas-holder{ position:relative; height: 400px; }
+
+  table.databar{ width:100%; border-collapse: collapse; margin-top:10px; font-size:.74rem; }
+  table.databar th, table.databar td{ text-align:left; padding: 4px 6px; border-bottom: 1px solid var(--line); }
+  table.databar th{ color: var(--muted); font-weight:500; text-transform:uppercase; font-size:.64rem; letter-spacing:.5px; }
+  table.databar td.num{ font-family:'IBM Plex Mono', monospace; text-align:right; color: var(--gold-light); }
+
+  /* Methodology */
+  .method-list{ list-style:none; margin:0; padding:0; }
+  .method-list li{
+    font-size: .78rem; line-height:1.55; padding: 10px 0; border-bottom: 1px solid var(--line);
+    color: var(--paper); display:grid; grid-template-columns: 100px 1fr; gap:10px;
+  }
+  .method-list li:last-child{ border-bottom:none; }
+  .method-list b{
+    font-family:'IBM Plex Mono', monospace; font-weight:500; font-size:.66rem;
+    color: var(--gold-light); text-transform:uppercase; letter-spacing:.4px;
+  }
+  .method-list span{ color: var(--muted); }
+  .method-list span em{ color: var(--paper); font-style:normal; }
+
+  .footnote{
+    font-size:.7rem; color: var(--muted); line-height:1.6; padding-top:14px;
+    border-top: 1px solid var(--line); margin-top:6px;
+  }
+  .footnote .tag{
+    display:inline-block; font-family:'IBM Plex Mono', monospace; font-size:.62rem;
+    background: rgba(201,162,75,0.15); color: var(--gold-light); border:1px solid rgba(201,162,75,0.3);
+    padding: 2px 7px; border-radius:20px; margin-bottom:8px;
+  }
+
+  /* Error banner */
+  #errorBanner{
+    position:absolute; top:14px; left:50%; transform: translateX(-50%);
+    background: var(--panel-2); border:1px solid var(--danger); color: var(--paper);
+    padding: 10px 16px; border-radius:8px; font-size:.8rem; z-index:1002; display:none;
+    max-width: 80%; box-shadow: 0 6px 20px rgba(0,0,0,.4);
+  }
+  #errorBanner b{ color: var(--danger); }
+
+  /* Leaflet overrides */
+  .info.legend{
+    background: rgba(21,42,32,0.95); border:1px solid var(--line);
+    padding: 14px 16px; border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,.5);
+    line-height: 22px; color: var(--paper); font-size: .8rem;
+  }
+  .info.legend h4{
+    margin:0 0 10px 0; font-family:'IBM Plex Mono', monospace; font-size:.7rem; letter-spacing:1px;
+    text-transform:uppercase; color: var(--gold-light); border-bottom:1px solid var(--line); padding-bottom:8px;
+  }
+  .info.legend i{ width:14px; height:14px; float:left; margin-right:9px; border-radius:3px; opacity:.95; }
+  .leaflet-control-layers{ background: rgba(21,42,32,0.95) !important; color: var(--paper) !important; border:1px solid var(--line) !important; border-radius: var(--radius) !important; font-family:'Inter'; }
+  .leaflet-bar a{ background-color: rgba(21,42,32,0.95) !important; color: var(--gold-light) !important; border-color: var(--line) !important; }
+  .leaflet-bar a:hover{ background-color: var(--panel-2) !important; }
+  .leaflet-popup-content-wrapper, .leaflet-popup-tip{
+    background: var(--panel-2) !important; color: var(--paper) !important;
+    border: 1px solid var(--gold); border-radius: 8px !important;
+    box-shadow: 0 6px 20px rgba(0,0,0,.55);
+  }
+  .leaflet-popup-content{ font-family:'Inter', sans-serif; margin: 12px 16px !important; }
+  .leaflet-popup-close-button{ color: var(--gold-light) !important; font-weight:bold; }
+  .leaflet-popup-close-button:hover{ color: #fff !important; }
+  .popup-title{ font-family:'Fraunces', serif; font-weight:600; font-size:1rem; margin:0 0 4px 0; color: var(--gold-light); }
+  .popup-value{ font-family:'IBM Plex Mono', monospace; font-size:.85rem; margin:0; }
+  .popup-sub{ font-size:.7rem; color: var(--muted); margin:2px 0 0 0; }
+
+  /* Mobile */
+  @media (max-width: 860px){
+    #sidebarToggle{ display:inline-block; }
+    .header-meta{ display:none; }
+    #content-wrapper{ position:relative; }
+    #sidebar{
+      position:absolute; top:0; left:0; bottom:0; z-index:1500; width:86%; min-width:0;
+      box-shadow: 10px 0 30px rgba(0,0,0,.6); transform: translateX(-105%); transition: transform .25s ease;
+    }
+    #sidebar.open{ transform: translateX(0); }
+    .stat-chips{ grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div class="brand">
+    <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M15 28 C15 20 15 14 15 6" stroke="#C9A24B" stroke-width="1.4"/>
+      <path d="M15 10 C9 8 4 9 2 13 C7 14 11 13 15 10Z" fill="#3E7C59" opacity=".9"/>
+      <path d="M15 8 C21 6 26 7 28 11 C23 12 19 11 15 8Z" fill="#3E7C59" opacity=".7"/>
+      <path d="M15 13 C10 12 6 14 4 18 C9 18 12 16 15 13Z" fill="#7FB596" opacity=".9"/>
+      <path d="M15 11 C20 10 24 12 26 16 C21 16 18 14 15 11Z" fill="#7FB596" opacity=".7"/>
+      <circle cx="15" cy="27" r="1.6" fill="#C9A24B"/>
+    </svg>
+    <div class="brand-text">
+      <p class="eyebrow">WebGIS &middot; Carbon Sequestration Estimation</p>
+      <h1>Smallholder Oil Palm Carbon Map</h1>
+    </div>
+  </div>
+  <button id="sidebarToggle">☰ Data Panel</button>
+  <div class="header-meta">
+    <div><strong>Study Area:</strong> Pelalawan Regency, Riau, Indonesia</div>
+    <div>Sentinel-2 &amp; Landsat 8/9 imagery &middot; 2024</div>
+  </div>
+</div>
+
+<div id="content-wrapper">
+
+  <div id="sidebar">
+
+    <div class="section">
+      <p class="section-label">Executive Summary</p>
+      <div class="stat-hero">
+        <div class="value">37.13 <span>MtC</span></div>
+        <div class="label">Total estimated carbon stock &middot; smallholder oil palm plantations</div>
+      </div>
+      <div class="stat-chips">
+        <div class="chip"><div class="n">29.3 tC/ha</div><div class="t">Mean carbon density</div></div>
+        <div class="chip"><div class="n">5,000</div><div class="t">Sample points (px)</div></div>
+        <div class="chip"><div class="n">12</div><div class="t">Sub-districts covered</div></div>
+        <div class="chip"><div class="n">&lt; 25 ha</div><div class="t">Smallholder plot scale</div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <p class="section-label">Distribution by Sub-district</p>
+      <div class="chart-wrap">
+        <div class="chart-canvas-holder"><canvas id="karbonChart"></canvas></div>
+      </div>
+      <table class="databar" id="dataTable"></table>
+    </div>
+
+    <div class="section">
+      <p class="section-label">Methodology &amp; Data Sources</p>
+      <ul class="method-list">
+        <li><b>Optical Imagery</b><span><em>Sentinel-2</em> &amp; <em>Landsat 8/9</em> composites, processed on Google Earth Engine.</span></li>
+        <li><b>Reference Data</b><span><em>GEDI L4A</em> spaceborne LiDAR, used as pseudo-ground-truth biomass.</span></li>
+        <li><b>Prediction Model</b><span><em>Random Forest</em> &amp; <em>XGBoost</em> classifiers for per-pixel carbon estimation.</span></li>
+        <li><b>Input Features</b><span><em>GLCM</em> texture metrics, red-edge indices (NDRE, CIre), and <em>EVI</em>.</span></li>
+      </ul>
+    </div>
+
+    <div class="footnote">
+      <span class="tag">IJOP 2026 Competition Entry</span><br>
+      This map is a supporting output of a study mapping carbon sequestration in smallholder oil palm plantations in Pelalawan Regency, Riau Province, Indonesia, using satellite remote sensing and machine learning. Click a sub-district boundary on the map for a breakdown of its carbon stock.
+    </div>
+
+  </div>
+
+  <div id="map"></div>
+  <div id="errorBanner"><b>Layer failed to load.</b> <span id="errorText"></span></div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/georaster"></script>
+<script src="https://unpkg.com/georaster-layer-for-leaflet"></script>
+
+<script>
+  // ==========================================
+  // 0. DATA — Carbon stock per sub-district (MtC)
+  //    Source: Statistik_Karbon_Kecamatan_Pelalawan_Final.csv
+  // ==========================================
+  const kecamatanData = [
+    { nama: "Teluk Meranti",       key: "TELUKMERANTI",     nilai: 12.5725 },
+    { nama: "Pangkalan Kuras",     key: "PANGKALANKURAS",   nilai: 6.0648 },
+    { nama: "Langgam",             key: "LANGGAM",          nilai: 4.0280 },
+    { nama: "Pelalawan",           key: "PELALAWAN",        nilai: 2.8381 },
+    { nama: "Kerumutan",           key: "KERUMUTAN",        nilai: 2.7784 },
+    { nama: "Ukui",                key: "UKUI",             nilai: 1.8768 },
+    { nama: "Kuala Kampar",        key: "KUALAKAMPAR",      nilai: 1.6138 },
+    { nama: "Bandar Sei Kijang",   key: "BANDARSEIKIJANG",  nilai: 1.5734 },
+    { nama: "Bunut",               key: "BUNUT",            nilai: 1.3020 },
+    { nama: "Pangkalan Lesung",    key: "PANGKALANLESUNG",  nilai: 1.0390 },
+    { nama: "Bandar Petalangan",   key: "BANDARPETALANGAN", nilai: 0.7949 },
+    { nama: "Pangkalan Kerinci",   key: "PANGKALANKERINCI", nilai: 0.6448 }
+  ];
+  const lookupByKey = Object.fromEntries(kecamatanData.map(d => [d.key, d]));
+
+  function normalizeName(s){
+    return (s || "").toString().toUpperCase().replace(/[^A-Z]/g, "");
+  }
+
+  // Scans ALL properties of a GeoJSON feature (regardless of the key name
+  // used by the source file) and tries to match any string value against
+  // the known sub-district names. Falls back to a substring match, and
+  // finally to the first non-empty string property, so every feature gets
+  // a usable popup even if the schema is inconsistent.
+  function matchFeatureToKecamatan(props){
+    const values = Object.values(props || {}).filter(v => typeof v === 'string' && v.trim().length > 0);
+    for (const v of values){
+      const norm = normalizeName(v);
+      if (lookupByKey[norm]) return { match: lookupByKey[norm], raw: v };
+    }
+    for (const v of values){
+      const norm = normalizeName(v);
+      if (norm.length < 4) continue;
+      for (const key in lookupByKey){
+        if (key.includes(norm) || norm.includes(key)) return { match: lookupByKey[key], raw: v };
+      }
+    }
+    return { match: null, raw: values[0] || null };
+  }
+
+  // ==========================================
+  // 1. CHART.JS — Carbon distribution by sub-district
+  // ==========================================
+  Chart.defaults.color = '#8FA095';
+  Chart.defaults.font.family = 'Inter';
+
+  const ctx = document.getElementById('karbonChart').getContext('2d');
+  const maxVal = Math.max(...kecamatanData.map(d => d.nilai));
+  const gradientBars = kecamatanData.map(d => {
+    const g = ctx.createLinearGradient(0, 0, 300, 0);
+    const t = d.nilai / maxVal;
+    g.addColorStop(0, 'rgba(156,122,84,0.55)');
+    g.addColorStop(1, t > 0.5 ? 'rgba(63,124,89,0.9)' : 'rgba(201,162,75,0.85)');
+    return g;
+  });
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: kecamatanData.map(d => d.nama),
+      datasets: [{
+        label: 'Carbon stock (MtC)',
+        data: kecamatanData.map(d => d.nilai),
+        backgroundColor: gradientBars,
+        borderColor: 'rgba(228,199,120,0.6)',
+        borderWidth: 1,
+        borderRadius: 3,
+        barPercentage: 0.7,
+        categoryPercentage: 0.75
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: { padding: { right: 34 } },
+      scales: {
+        x: {
+          beginAtZero: true,
+          grid: { color: 'rgba(239,231,214,0.06)' },
+          title: { display: true, text: 'MtC', color: '#8FA095', font: { size: 10 } },
+          ticks: { font: { size: 9 } }
+        },
+        y: {
+          grid: { display: false },
+          ticks: { font: { size: 10 }, autoSkip: false }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(21,42,32,0.95)',
+          titleColor: '#E4C778',
+          bodyColor: '#EFE7D6',
+          borderColor: 'rgba(239,231,214,0.12)',
+          borderWidth: 1,
+          callbacks: { label: (c) => ` ${c.parsed.x.toFixed(2)} MtC` }
+        },
+        datalabels: {
+          color: '#EFE7D6',
+          anchor: 'end', align: 'right', clamp: true, clip: false,
+          font: { size: 9, family: 'IBM Plex Mono' },
+          formatter: (v) => v.toFixed(2)
+        }
+      }
+    },
+    plugins: [ChartDataLabels]
+  });
+
+  // Data table (accessible / printable complement to the chart)
+  const tbl = document.getElementById('dataTable');
+  tbl.innerHTML = '<tr><th>Sub-district</th><th>MtC</th></tr>' +
+    kecamatanData.map(d => `<tr><td>${d.nama}</td><td class="num">${d.nilai.toFixed(2)}</td></tr>`).join('');
+
+  // ==========================================
+  // 2. LEAFLET MAP
+  // ==========================================
+  const darkBasemap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap &copy; CARTO'
+  });
+  const satBasemap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles &copy; Esri'
+  });
+  const lightBasemap = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap &copy; CARTO'
+  });
+
+  const map = L.map('map', {
+    center: [0.2839, 101.7068],
+    zoom: 9,
+    layers: [darkBasemap]
+  });
+
+  const baseTree = {
+    "Dark Canvas (Default)": darkBasemap,
+    "Satellite Imagery": satBasemap,
+    "Light Canvas": lightBasemap
+  };
+  const overlaysTree = {};
+  const layerControl = L.control.layers(baseTree, overlaysTree, { collapsed: false }).addTo(map);
+
+  function showError(msg){
+    const b = document.getElementById('errorBanner');
+    document.getElementById('errorText').textContent = msg;
+    b.style.display = 'block';
+    setTimeout(() => { b.style.display = 'none'; }, 6000);
+  }
+
+  // Administrative boundary (GeoJSON)
+  fetch('batas_pelalawan.geojson')
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(data => {
+      const defaultBoundaryStyle = { color: "#E4C778", weight: 1.4, fillOpacity: 0, fillColor: "#3E7C59", dashArray: '4, 5', opacity: 0.85 };
+      const batasWilayah = L.geoJSON(data, {
+        style: () => defaultBoundaryStyle,
+        // onEachFeature runs once per polygon and receives that polygon's own
+        // `feature`/`layer` as function arguments — each call gets its own
+        // independent copies, so there is no shared variable for a later
+        // iteration to overwrite. The popup only ever showed one sub-district
+        // before because the matcher looked for a fixed set of property key
+        // names (WADMKC / NAMOBJ / ...) and most features didn't use any of
+        // them — not because of a closure bug. matchFeatureToKecamatan()
+        // below fixes that by scanning every property value on the feature.
+        onEachFeature: (feature, layer) => {
+          const props = feature.properties || {};
+          const { match, raw } = matchFeatureToKecamatan(props);
+          const label = match ? match.nama : (raw || "Study area");
+          const value = match ? `${match.nilai.toFixed(2)} MtC` : "No carbon data available for this boundary";
+          layer.bindPopup(
+            `<p class="popup-title">${label}</p>` +
+            `<p class="popup-value">${value}</p>` +
+            `<p class="popup-sub">Pelalawan Regency</p>`
+          );
+          layer.on({
+            mouseover: (e) => {
+              const target = e.target;
+              target.setStyle({ weight: 2.5, color: '#FFFFFF', fillOpacity: 0.15 });
+              if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) target.bringToFront();
+            },
+            mouseout: (e) => batasWilayah.resetStyle(e.target)
+          });
+        }
+      }).addTo(map);
+      layerControl.addOverlay(batasWilayah, "Pelalawan Boundary");
+    })
+    .catch(() => showError('batas_pelalawan.geojson was not found in this folder — upload it alongside this page to display sub-district boundaries.'));
+
+  // Carbon classification raster (Cloud-Optimized GeoTIFF)
+  const url_to_cog = "https://github.com/dumanian/webgis-karbon/releases/download/v1.0/carbon_class_3warna_COG.tif";
+
+  parseGeoraster(url_to_cog).then(georaster => {
+    const carbonLayer = new GeoRasterLayer({
+      georaster: georaster,
+      opacity: 0.85,
+      pixelValuesToColorFn: (values) => {
+        const val = values[0];
+        if (val === 1) return '#9C7A54'; // Low — sparse vegetation / bare soil
+        if (val === 2) return '#C9A24B'; // Medium — transitional canopy
+        if (val === 3) return '#3E7C59'; // High — dense canopy
+        return null;
+      },
+      resolution: 256
+    });
+    carbonLayer.addTo(map);
+    layerControl.addOverlay(carbonLayer, "Carbon Distribution (tC/ha)");
+    map.fitBounds(carbonLayer.getBounds());
+  }).catch(() => showError('The carbon classification raster failed to load — check your connection or the availability of the COG file.'));
+
+  // Legend
+  const legend = L.control({ position: 'bottomright' });
+  legend.onAdd = function () {
+    const div = L.DomUtil.create('div', 'info legend');
+    div.innerHTML =
+      '<h4>Carbon Stock Level</h4>' +
+      '<i style="background:#9C7A54;"></i> Low (&lt; 30 tC/ha)<br>' +
+      '<i style="background:#C9A24B;"></i> Medium (30 &ndash; 60 tC/ha)<br>' +
+      '<i style="background:#3E7C59;"></i> High (&gt; 60 tC/ha)<br>';
+    return div;
+  };
+  legend.addTo(map);
+
+  L.control.scale({ imperial: false }).addTo(map);
+
+  // Mobile sidebar toggle
+  const sidebar = document.getElementById('sidebar');
+  document.getElementById('sidebarToggle').addEventListener('click', () => {
+    sidebar.classList.toggle('open');
+  });
+</script>
+</body>
+</html>
