@@ -221,14 +221,14 @@
     <div class="section">
       <p class="section-label">Executive Summary</p>
       <div class="stat-hero">
-        <div class="value">37.13 <span>MtC</span></div>
-        <div class="label">Total estimated carbon stock &middot; smallholder oil palm plantations</div>
+        <div class="value">2.68 <span>MtC</span></div>
+        <div class="label">Total carbon sequestration potential &middot; smallholder oil palm plantations</div>
       </div>
       <div class="stat-chips">
-        <div class="chip"><div class="n">29.3 tC/ha</div><div class="t">Mean carbon density</div></div>
-        <div class="chip"><div class="n">5,000</div><div class="t">Sample points (px)</div></div>
+        <div class="chip"><div class="n">29.99 tC/ha</div><div class="t">Mean carbon stock (RF)</div></div>
+        <div class="chip"><div class="n">4,990</div><div class="t">GEDI training samples</div></div>
         <div class="chip"><div class="n">12</div><div class="t">Sub-districts covered</div></div>
-        <div class="chip"><div class="n">&lt; 25 ha</div><div class="t">Smallholder plot scale</div></div>
+        <div class="chip"><div class="n">64.9%</div><div class="t">RF overall accuracy</div></div>
       </div>
     </div>
 
@@ -247,12 +247,13 @@
         <li><b>Reference Data</b><span><em>GEDI L4A</em> spaceborne LiDAR, used as pseudo-ground-truth biomass.</span></li>
         <li><b>Prediction Model</b><span><em>Random Forest</em> &amp; <em>XGBoost</em> classifiers for per-pixel carbon estimation.</span></li>
         <li><b>Input Features</b><span><em>GLCM</em> texture metrics, red-edge indices (NDRE, CIre), and <em>EVI</em>.</span></li>
+        <li><b>Model Performance</b><span>Random Forest: 64.9% accuracy, &kappa; = 0.30, RMSE 14.62 tC/ha — outperforming XGBoost and an NDVI-only baseline.</span></li>
       </ul>
     </div>
 
     <div class="footnote">
       <span class="tag">IJOP 2026 Competition Entry</span><br>
-      This map is a supporting output of a study mapping carbon sequestration in smallholder oil palm plantations in Pelalawan Regency, Riau Province, Indonesia, using satellite remote sensing and machine learning. Click a sub-district boundary on the map for a breakdown of its carbon stock.
+      This map is a supporting output of a study mapping carbon sequestration in smallholder oil palm plantations in Pelalawan Regency, Riau Province, Indonesia, using satellite remote sensing and machine learning. Figures reflect the smallholder-mask-consistent regional total (2.68 MtC); per-sub-district values are proportionally rescaled from the raw zonal statistics to match this total. Click a sub-district boundary on the map for a breakdown of its carbon stock.
     </div>
 
   </div>
@@ -268,8 +269,12 @@
 
 <script>
   // ==========================================
-  // 0. DATA — Carbon stock per sub-district (MtC)
-  //    Source: Statistik_Karbon_Kecamatan_Pelalawan_Final.csv
+  // 0. DATA — Carbon sequestration potential per sub-district (MtC)
+  //    Source: KTI_IJOP manuscript, Table 2 (rescaled to match the
+  //    regional total of 2.68 MtC reported in Section 2.5). The raw
+  //    zonal-statistics sum was 37.13 MtC, which the manuscript itself
+  //    flags as an artifact of the smallholder mask not being applied
+  //    before aggregation — that raw figure is NOT used here.
   // ==========================================
   const kecamatanData = [
     { nama: "Teluk Meranti",       key: "TELUKMERANTI",     nilai: 0.91 },
@@ -461,6 +466,7 @@
 
   // Carbon classification raster (Cloud-Optimized GeoTIFF)
   var url_to_cog = "https://dumanian.github.io/webgis-karbon/carbon_class_3warna_COG.tif";
+
   parseGeoraster(url_to_cog).then(georaster => {
     const carbonLayer = new GeoRasterLayer({
       georaster: georaster,
