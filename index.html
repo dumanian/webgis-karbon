@@ -221,7 +221,7 @@
     <div class="section">
       <p class="section-label">Executive Summary</p>
       <div class="stat-hero">
-        <div class="value">2.68 <span>MtC</span></div>
+        <div class="value" id="totalKarbonValue">2.67 <span>MtC</span></div>
         <div class="label">Total carbon sequestration potential &middot; smallholder oil palm plantations</div>
       </div>
       <div class="stat-chips">
@@ -253,7 +253,7 @@
 
     <div class="footnote">
       <span class="tag">IJOP 2026 Competition Entry</span><br>
-      This map is a supporting output of a study mapping carbon sequestration in smallholder oil palm plantations in Pelalawan Regency, Riau Province, Indonesia, using satellite remote sensing and machine learning. Figures reflect the smallholder-mask-consistent regional total (2.68 MtC); per-sub-district values are proportionally rescaled from the raw zonal statistics to match this total. Click a sub-district boundary on the map for a breakdown of its carbon stock.
+      This map is a supporting output of a study mapping carbon sequestration in smallholder oil palm plantations in Pelalawan Regency, Riau Province, Indonesia, using satellite remote sensing and machine learning. Per-sub-district values are aggregated directly from the final zonal-statistics dataset (Data_Karbon_Kecamatan_Paling_Fix.csv), summing all polygon fragments per sub-district and rounding to two decimal places. Click a sub-district boundary on the map for a breakdown of its carbon stock.
     </div>
 
   </div>
@@ -270,27 +270,34 @@
 <script>
   // ==========================================
   // 0. DATA — Carbon sequestration potential per sub-district (MtC)
-  //    Source: KTI_IJOP manuscript, Table 2 (rescaled to match the
-  //    regional total of 2.68 MtC reported in Section 2.5). The raw
-  //    zonal-statistics sum was 37.13 MtC, which the manuscript itself
-  //    flags as an artifact of the smallholder mask not being applied
-  //    before aggregation — that raw figure is NOT used here.
+  //    Source: Data_Karbon_Kecamatan_Paling_Fix.csv. Some sub-districts
+  //    (e.g. Kuala Kampar) appear as multiple polygon fragments in the
+  //    raw zonal statistics; those fragments are summed here into a
+  //    single per-sub-district total, then rounded to 2 decimal places.
+  //    Grand total across all 12 sub-districts: 2.67 MtC.
   // ==========================================
   const kecamatanData = [
-    { nama: "Teluk Meranti",       key: "TELUKMERANTI",     nilai: 0.91 },
-    { nama: "Pangkalan Kuras",     key: "PANGKALANKURAS",   nilai: 0.44 },
-    { nama: "Langgam",             key: "LANGGAM",          nilai: 0.29 },
-    { nama: "Pelalawan",           key: "PELALAWAN",        nilai: 0.20 },
-    { nama: "Kerumutan",           key: "KERUMUTAN",        nilai: 0.20 },
-    { nama: "Ukui",                key: "UKUI",             nilai: 0.14 },
-    { nama: "Kuala Kampar",        key: "KUALAKAMPAR",      nilai: 0.12 },
-    { nama: "Bandar Sei Kijang",   key: "BANDARSEIKIJANG",  nilai: 0.11 },
-    { nama: "Bunut",               key: "BUNUT",            nilai: 0.09 },
-    { nama: "Pangkalan Lesung",    key: "PANGKALANLESUNG",  nilai: 0.08 },
-    { nama: "Bandar Petalangan",   key: "BANDARPETALANGAN", nilai: 0.06 },
-    { nama: "Pangkalan Kerinci",   key: "PANGKALANKERINCI", nilai: 0.05 }
+    { nama: "Pangkalan Kuras",     key: "PANGKALANKURAS",   nilai: 0.86 },
+    { nama: "Langgam",             key: "LANGGAM",          nilai: 0.38 },
+    { nama: "Kerumutan",           key: "KERUMUTAN",        nilai: 0.34 },
+    { nama: "Ukui",                key: "UKUI",             nilai: 0.31 },
+    { nama: "Pangkalan Lesung",    key: "PANGKALANLESUNG",  nilai: 0.27 },
+    { nama: "Bandar Sei Kijang",   key: "BANDARSEIKIJANG",  nilai: 0.21 },
+    { nama: "Bandar Petalangan",   key: "BANDARPETALANGAN", nilai: 0.09 },
+    { nama: "Bunut",               key: "BUNUT",            nilai: 0.07 },
+    { nama: "Pangkalan Kerinci",   key: "PANGKALANKERINCI", nilai: 0.04 },
+    { nama: "Pelalawan",           key: "PELALAWAN",        nilai: 0.03 },
+    { nama: "Teluk Meranti",       key: "TELUKMERANTI",     nilai: 0.03 },
+    { nama: "Kuala Kampar",        key: "KUALAKAMPAR",      nilai: 0.02 }
   ];
   const lookupByKey = Object.fromEntries(kecamatanData.map(d => [d.key, d]));
+
+  // Update the executive-summary total so it always matches the sum of
+  // the table/chart values above, even if the data is edited later.
+  (function updateTotal(){
+    const total = kecamatanData.reduce((s, d) => s + d.nilai, 0);
+    document.getElementById('totalKarbonValue').innerHTML = total.toFixed(2) + ' <span>MtC</span>';
+  })();
 
   function normalizeName(s){
     return (s || "").toString().toUpperCase().replace(/[^A-Z]/g, "");
