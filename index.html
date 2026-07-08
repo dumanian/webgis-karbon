@@ -253,7 +253,7 @@
 
     <div class="footnote">
       <span class="tag">IJOP 2026 Competition Entry</span><br>
-      This interactive map is a supporting output of a study mapping carbon sequestration in smallholder oil palm plantations in Pelalawan Regency, Riau Province, Indonesia, using satellite remote sensing and machine learning. Sub-district values are aggregated directly from mask-constrained zonal statistics, seamlessly combining all administrative polygon fragments and rounded to two decimal places. Click any sub-district boundary on the map for a detailed breakdown of its carbon stock.
+      This interactive map is a supporting output of a study mapping carbon sequestration in smallholder oil palm plantations in Pelalawan Regency, Riau Province, Indonesia, using satellite remote sensing and machine learning. Sub-district values are aggregated directly from mask-constrained zonal statistics, seamlessly combining all administrative polygon fragments and rounded to two decimal places. The regional total (2.67 MtC) reflects the unrounded, scientifically precise aggregate and may differ slightly from the sum of the rounded sub-district figures shown below, a standard rounding discrepancy in spatial statistics. Click any sub-district boundary on the map for a detailed breakdown of its carbon stock.
     </div>
 
   </div>
@@ -292,12 +292,17 @@
   ];
   const lookupByKey = Object.fromEntries(kecamatanData.map(d => [d.key, d]));
 
-  // Update the executive-summary total so it always matches the sum of
-  // the table/chart values above, even if the data is edited later.
-  (function updateTotal(){
-    const total = kecamatanData.reduce((s, d) => s + d.nilai, 0);
-    document.getElementById('totalKarbonValue').innerHTML = total.toFixed(2) + ' <span>MtC</span>';
-  })();
+  // TOTAL_KARBON_MTC is the true regional total computed from the raw,
+  // unrounded per-pixel zonal statistics (2.6705748809... MtC -> 2.67 MtC).
+  // It is intentionally NOT the sum of the per-sub-district values above,
+  // because those have each already been rounded to 2 decimal places for
+  // display (0.86+0.38+0.34+0.31+0.27+0.21+0.09+0.07+0.04+0.03+0.03+0.02
+  // = 2.65). That 2.65-vs-2.67 gap is an expected rounding discrepancy,
+  // not an error: the executive-summary figure should always reflect the
+  // scientifically accurate unrounded total, while the table/chart show
+  // the rounded per-sub-district breakdown for readability.
+  const TOTAL_KARBON_MTC = 2.67;
+  document.getElementById('totalKarbonValue').innerHTML = TOTAL_KARBON_MTC.toFixed(2) + ' <span>MtC</span>';
 
   function normalizeName(s){
     return (s || "").toString().toUpperCase().replace(/[^A-Z]/g, "");
