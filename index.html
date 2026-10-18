@@ -270,11 +270,6 @@
 <script>
   // ==========================================
   // 0. DATA — Carbon sequestration potential per sub-district (MtC)
-  //    Source: Data_Karbon_Kecamatan_Paling_Fix.csv. Some sub-districts
-  //    (e.g. Kuala Kampar) appear as multiple polygon fragments in the
-  //    raw zonal statistics; those fragments are summed here into a
-  //    single per-sub-district total, then rounded to 2 decimal places.
-  //    Grand total across all 12 sub-districts: 2.67 MtC.
   // ==========================================
   const kecamatanData = [
     { nama: "Pangkalan Kuras",     key: "PANGKALANKURAS",   nilai: 0.86 },
@@ -292,15 +287,6 @@
   ];
   const lookupByKey = Object.fromEntries(kecamatanData.map(d => [d.key, d]));
 
-  // TOTAL_KARBON_MTC is the true regional total computed from the raw,
-  // unrounded per-pixel zonal statistics (2.6705748809... MtC -> 2.67 MtC).
-  // It is intentionally NOT the sum of the per-sub-district values above,
-  // because those have each already been rounded to 2 decimal places for
-  // display (0.86+0.38+0.34+0.31+0.27+0.21+0.09+0.07+0.04+0.03+0.03+0.02
-  // = 2.65). That 2.65-vs-2.67 gap is an expected rounding discrepancy,
-  // not an error: the executive-summary figure should always reflect the
-  // scientifically accurate unrounded total, while the table/chart show
-  // the rounded per-sub-district breakdown for readability.
   const TOTAL_KARBON_MTC = 2.67;
   document.getElementById('totalKarbonValue').innerHTML = TOTAL_KARBON_MTC.toFixed(2) + ' <span>MtC</span>';
 
@@ -308,11 +294,6 @@
     return (s || "").toString().toUpperCase().replace(/[^A-Z]/g, "");
   }
 
-  // Scans ALL properties of a GeoJSON feature (regardless of the key name
-  // used by the source file) and tries to match any string value against
-  // the known sub-district names. Falls back to a substring match, and
-  // finally to the first non-empty string property, so every feature gets
-  // a usable popup even if the schema is inconsistent.
   function matchFeatureToKecamatan(props){
     const values = Object.values(props || {}).filter(v => typeof v === 'string' && v.trim().length > 0);
     for (const v of values){
@@ -398,7 +379,6 @@
     plugins: [ChartDataLabels]
   });
 
-  // Data table (accessible / printable complement to the chart)
   const tbl = document.getElementById('dataTable');
   tbl.innerHTML = '<tr><th>Sub-district</th><th>MtC</th></tr>' +
     kecamatanData.map(d => `<tr><td>${d.nama}</td><td class="num">${d.nilai.toFixed(2)}</td></tr>`).join('');
@@ -407,17 +387,17 @@
   // 2. LEAFLET MAP (100% Bebas API Key)
   // ==========================================
   
-  // Menggunakan Esri World Imagery (Sangat direkomendasikan untuk visibilitas kanopi kelapa sawit)
+  // Menggunakan Esri World Imagery
   const satBasemap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
     attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
   });
 
-  // Mengganti CARTO Dark Canvas dengan Esri Dark Gray Canvas (Stabil, Gelap, Gratis)
+  // Menggunakan Esri Dark Gray Canvas
   const darkBasemap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
     attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'
   });
 
-  // Mengganti CARTO Light Canvas dengan OpenStreetMap standar
+  // Menggunakan OpenStreetMap
   const lightBasemap = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   });
@@ -425,7 +405,7 @@
   const map = L.map('map', {
     center: [0.2839, 101.7068],
     zoom: 9,
-    layers: [darkBasemap] // Layer default menggunakan Esri Dark Gray
+    layers: [darkBasemap] // Layer default
   });
 
   const baseTree = {
@@ -435,6 +415,12 @@
   };
   const overlaysTree = {};
   const layerControl = L.control.layers(baseTree, overlaysTree, { collapsed: false }).addTo(map);
+
+  function showError(msg){
+    const b = document.getElementById('errorBanner');
+    document.getElementById('errorText').textContent = msg;
+    b.style.display = 'block';
+    setTimeout(() => { b.style.display = 'none'; }, 6000);
   }
 
   // Administrative boundary (GeoJSON)
@@ -444,14 +430,6 @@
       const defaultBoundaryStyle = { color: "#E4C778", weight: 1.4, fillOpacity: 0, fillColor: "#3E7C59", dashArray: '4, 5', opacity: 0.85 };
       const batasWilayah = L.geoJSON(data, {
         style: () => defaultBoundaryStyle,
-        // onEachFeature runs once per polygon and receives that polygon's own
-        // `feature`/`layer` as function arguments — each call gets its own
-        // independent copies, so there is no shared variable for a later
-        // iteration to overwrite. The popup only ever showed one sub-district
-        // before because the matcher looked for a fixed set of property key
-        // names (WADMKC / NAMOBJ / ...) and most features didn't use any of
-        // them — not because of a closure bug. matchFeatureToKecamatan()
-        // below fixes that by scanning every property value on the feature.
         onEachFeature: (feature, layer) => {
           const props = feature.properties || {};
           const { match, raw } = matchFeatureToKecamatan(props);
@@ -485,9 +463,9 @@
       opacity: 0.85,
       pixelValuesToColorFn: (values) => {
         const val = values[0];
-        if (val === 1) return '#9C7A54'; // Low — sparse vegetation / bare soil
-        if (val === 2) return '#C9A24B'; // Medium — transitional canopy
-        if (val === 3) return '#3E7C59'; // High — dense canopy
+        if (val === 1) return '#9C7A54'; // Low
+        if (val === 2) return '#C9A24B'; // Medium
+        if (val === 3) return '#3E7C59'; // High
         return null;
       },
       resolution: 256
