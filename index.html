@@ -404,22 +404,28 @@
     kecamatanData.map(d => `<tr><td>${d.nama}</td><td class="num">${d.nilai.toFixed(2)}</td></tr>`).join('');
 
   // ==========================================
-  // 2. LEAFLET MAP
+  // 2. LEAFLET MAP (Diperbarui dengan Basemap Bebas API Key)
   // ==========================================
-  const darkBasemap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; OpenStreetMap &copy; CARTO'
-  });
+  
+  // Menggunakan Esri World Imagery (Sangat direkomendasikan untuk visibilitas kanopi kelapa sawit)
   const satBasemap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    attribution: 'Tiles &copy; Esri'
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
   });
-  const lightBasemap = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; OpenStreetMap &copy; CARTO'
+
+  // Mengganti CARTO Dark Canvas dengan versi rastertiles yang tidak mewajibkan API Key berbayar
+  const darkBasemap = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+  });
+
+  // Mengganti CARTO Light Canvas dengan OpenStreetMap standar
+  const lightBasemap = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   });
 
   const map = L.map('map', {
     center: [0.2839, 101.7068],
     zoom: 9,
-    layers: [darkBasemap]
+    layers: [darkBasemap] // Layer default tetap mode gelap (Dark Canvas)
   });
 
   const baseTree = {
@@ -429,12 +435,6 @@
   };
   const overlaysTree = {};
   const layerControl = L.control.layers(baseTree, overlaysTree, { collapsed: false }).addTo(map);
-
-  function showError(msg){
-    const b = document.getElementById('errorBanner');
-    document.getElementById('errorText').textContent = msg;
-    b.style.display = 'block';
-    setTimeout(() => { b.style.display = 'none'; }, 6000);
   }
 
   // Administrative boundary (GeoJSON)
