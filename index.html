@@ -404,7 +404,7 @@
     kecamatanData.map(d => `<tr><td>${d.nama}</td><td class="num">${d.nilai.toFixed(2)}</td></tr>`).join('');
 
   // ==========================================
-  // 2. LEAFLET MAP (Diperbarui dengan Basemap Bebas API Key)
+  // 2. LEAFLET MAP (100% Bebas API Key)
   // ==========================================
   
   // Menggunakan Esri World Imagery (Sangat direkomendasikan untuk visibilitas kanopi kelapa sawit)
@@ -412,9 +412,9 @@
     attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
   });
 
-  // Mengganti CARTO Dark Canvas dengan versi rastertiles yang tidak mewajibkan API Key berbayar
-  const darkBasemap = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+  // Mengganti CARTO Dark Canvas dengan Esri Dark Gray Canvas (Stabil, Gelap, Gratis)
+  const darkBasemap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'
   });
 
   // Mengganti CARTO Light Canvas dengan OpenStreetMap standar
@@ -425,7 +425,7 @@
   const map = L.map('map', {
     center: [0.2839, 101.7068],
     zoom: 9,
-    layers: [darkBasemap] // Layer default tetap mode gelap (Dark Canvas)
+    layers: [darkBasemap] // Layer default menggunakan Esri Dark Gray
   });
 
   const baseTree = {
